@@ -51,3 +51,10 @@ npm run deploy
 
 After deployment, set the function URL as your Request URL in the Slack app's Event Subscriptions page.
 
+## Difference from reacjilator
+
+This is fork of awesome project https://github.com/slackapi/reacjilator
+
+Main differences are:
+ - reacjilator [Socket Mode](https://api.slack.com/apis/event-delivery) whereas this repo uses HTTP mode, which is easier to deploy and lower cost when usage is small
+ - This can be easily deployed to GCP Cloud Run Function
