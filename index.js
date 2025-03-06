@@ -2,15 +2,22 @@ require('dotenv').config();
 
 const langcode = require('./langcode');
 
-const { App } = require('@slack/bolt');
+const { App, ExpressReceiver } = require('@slack/bolt');
 const { Translate } = require('@google-cloud/translate').v2;
 
-const app = new App({
-  token: process.env.SLACK_BOT_TOKEN,
-  socketMode: true,
-  appToken: process.env.SLACK_APP_TOKEN,
+// Create a custom receiver
+const expressReceiver = new ExpressReceiver({
+  signingSecret: process.env.SLACK_SIGNING_SECRET,
+  processBeforeResponse: true
 });
 
+// Initialize the app with the receiver
+const app = new App({
+  token: process.env.SLACK_BOT_TOKEN,
+  receiver: expressReceiver
+});
+
+console.log(`initializing translate with project id ${process.env.GOOGLE_PROJECT_ID}`);
 const translate = new Translate({
   projectId: process.env.GOOGLE_PROJECT_ID,
 });
@@ -19,7 +26,7 @@ app.event('reaction_added', async ({ event, client }) => {
   const { type, reaction, item } = event;
 
   if (type === 'reaction_added') {
-    // If reacji was triggered && it is a correct emoji, translate the message into a specified language
+    // If this bot was triggered && it is a correct emoji, translate the message into a specified language
 
     if (item.type !== 'message') {
       return;
@@ -143,16 +150,35 @@ const postMessage = async (message, translation, lang, channel, emoji, client) =
   }
 };
 
+// For local development
+if (process.env.NODE_ENV !== 'production') {
+  (async () => {
+    try {
+      // Start your app on a specific port
+      await app.start(process.env.PORT || 3000);
+      console.log(`⚡️ Bolt app is running with port ${process.env.PORT || 3000}!`);
+    } catch (error) {
+      console.error('Unable to start App', error);
+      process.exit(1);
+    }
+  })();
+}
 
-(async () => {
+// For Google Cloud Functions
+exports.slackEmojiTranslator = async (req, res) => {
   try {
-    // Start your app
-    await app.start();
-    // eslint-disable-next-line no-console
-    console.log('⚡️ Bolt app is running!');
+    // Handle URL verification challenge
+    if (req.body.type === 'url_verification') {
+      return res.status(200).send({
+        challenge: req.body.challenge
+      });
+    }
+    
+    // Use the expressReceiver to handle the request
+    await expressReceiver.requestHandler(req, res);
   } catch (error) {
-    // eslint-disable-next-line no-console
-    console.error('Unable to start App', error);
-    process.exit(1);
+    console.error('Error processing event:', error);
+    console.error('Request body:', JSON.stringify(req.body));
+    res.status(500).send('Error processing event');
   }
-})();
+};

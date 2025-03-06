@@ -1,21 +1,18 @@
 {
-  "name": "slack-reacjilator",
+  "name": "slack-emoji-translator",
   "version": "2.0.0",
   "description": "A translation bot for Slack that translates a message when a user reacted with an emoji",
   "main": "index.js",
   "repository": "github:slackapi/reacjilator",
   "scripts": {
-    "start": "nf start",
+    "start": "node index.js",
+    "deploy": "gcloud functions deploy slack-emoji-translator --gen2 --runtime nodejs22 --trigger-http --entry-point=slackEmojiTranslator",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [
     "bot",
     "slack",
     "slackbot"
-  ],
-  "contributors": [
-    "Tomomi Imura",
-    "Colm Doyle"
   ],
   "license": "MIT",
   "dependencies": {
